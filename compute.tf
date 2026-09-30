@@ -3,21 +3,24 @@ resource "aws_cloudwatch_log_group" "app" {
   retention_in_days = var.log_retention_days
 }
 
-data "aws_iam_policy_document" "ecs_task_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
+locals {
+  ecs_task_assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role" "execution" {
   name_prefix        = "${var.name}-execution-"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role.json
+  assume_role_policy = local.ecs_task_assume_role_policy
 }
 
 resource "aws_iam_role_policy_attachment" "execution" {
@@ -27,29 +30,29 @@ resource "aws_iam_role_policy_attachment" "execution" {
 
 resource "aws_iam_role" "task" {
   name_prefix        = "${var.name}-task-"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role.json
-}
-
-data "aws_iam_policy_document" "task_runtime" {
-  statement {
-    sid       = "ReadDatabaseCredential"
-    effect    = "Allow"
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_db_instance.postgres.master_user_secret[0].secret_arn]
-  }
-
-  statement {
-    sid       = "DecryptDatabaseCredential"
-    effect    = "Allow"
-    actions   = ["kms:Decrypt"]
-    resources = [aws_kms_key.data.arn]
-  }
+  assume_role_policy = local.ecs_task_assume_role_policy
 }
 
 resource "aws_iam_role_policy" "task_runtime" {
-  name   = "runtime-access"
-  role   = aws_iam_role.task.id
-  policy = data.aws_iam_policy_document.task_runtime.json
+  name = "runtime-access"
+  role = aws_iam_role.task.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ReadDatabaseCredential"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [aws_db_instance.postgres.master_user_secret[0].secret_arn]
+      },
+      {
+        Sid      = "DecryptDatabaseCredential"
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = [aws_kms_key.data.arn]
+      }
+    ]
+  })
 }
 
 resource "aws_lb" "this" {
