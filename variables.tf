@@ -97,6 +97,28 @@ variable "desired_count" {
   }
 }
 
+variable "max_task_count" {
+  description = "Maximum ECS task count used by target-tracking autoscaling."
+  type        = number
+  default     = 6
+
+  validation {
+    condition     = var.max_task_count >= var.desired_count
+    error_message = "max_task_count must be greater than or equal to desired_count."
+  }
+}
+
+variable "target_cpu_utilization" {
+  description = "Target average ECS CPU utilization percentage for service autoscaling."
+  type        = number
+  default     = 65
+
+  validation {
+    condition     = var.target_cpu_utilization >= 20 && var.target_cpu_utilization <= 90
+    error_message = "target_cpu_utilization must be between 20 and 90."
+  }
+}
+
 variable "task_cpu" {
   description = "Fargate task CPU units."
   type        = number
