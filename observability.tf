@@ -3,40 +3,46 @@ resource "aws_cloudwatch_log_group" "vpc_flow" {
   retention_in_days = var.log_retention_days
 }
 
-data "aws_iam_policy_document" "flow_logs_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["vpc-flow-logs.amazonaws.com"]
-    }
-  }
-}
-
 resource "aws_iam_role" "flow_logs" {
-  name_prefix        = "${var.name}-flow-logs-"
-  assume_role_policy = data.aws_iam_policy_document.flow_logs_assume_role.json
-}
-
-data "aws_iam_policy_document" "flow_logs" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogStream",
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-      "logs:PutLogEvents",
+  name_prefix = "${var.name}-flow-logs-"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+      }
     ]
-    resources = ["${aws_cloudwatch_log_group.vpc_flow.arn}:*"]
-  }
+  })
 }
 
 resource "aws_iam_role_policy" "flow_logs" {
-  name   = "publish-flow-logs"
-  role   = aws_iam_role.flow_logs.id
-  policy = data.aws_iam_policy_document.flow_logs.json
+  name = "publish-flow-logs"
+  role = aws_iam_role.flow_logs.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "PublishFlowLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams",
+        ]
+        Resource = ["${aws_cloudwatch_log_group.vpc_flow.arn}:*"]
+      },
+      {
+        Sid      = "DiscoverLogGroup"
+        Effect   = "Allow"
+        Action   = ["logs:DescribeLogGroups"]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 resource "aws_flow_log" "this" {
