@@ -176,14 +176,14 @@ resource "aws_ecs_task_definition" "app" {
 }
 
 resource "aws_ecs_service" "app" {
-  name            = "${var.name}-app"
-  cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.app.arn
-  desired_count   = var.desired_count
-  launch_type     = "FARGATE"
+  name             = "${var.name}-app"
+  cluster          = aws_ecs_cluster.this.id
+  task_definition  = aws_ecs_task_definition.app.arn
+  desired_count    = var.desired_count
+  launch_type      = "FARGATE"
   platform_version = "LATEST"
 
-  enable_execute_command = var.enable_execute_command
+  enable_execute_command  = var.enable_execute_command
   enable_ecs_managed_tags = true
   propagate_tags          = "SERVICE"
 
@@ -206,6 +206,10 @@ resource "aws_ecs_service" "app" {
     target_group_arn = aws_lb_target_group.app.arn
     container_name   = "app"
     container_port   = var.app_port
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
   }
 
   depends_on = [aws_lb_listener.https]
