@@ -103,8 +103,8 @@ variable "max_task_count" {
   default     = 6
 
   validation {
-    condition     = var.max_task_count >= var.desired_count
-    error_message = "max_task_count must be greater than or equal to desired_count."
+    condition     = var.max_task_count >= 2
+    error_message = "max_task_count must be at least 2."
   }
 }
 
