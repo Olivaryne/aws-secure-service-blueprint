@@ -11,3 +11,10 @@ check "database_storage_bounds" {
     error_message = "db_max_allocated_storage must be greater than or equal to db_allocated_storage."
   }
 }
+
+check "autoscaling_capacity_bounds" {
+  assert {
+    condition     = var.max_task_count >= var.desired_count
+    error_message = "max_task_count must be greater than or equal to desired_count."
+  }
+}
