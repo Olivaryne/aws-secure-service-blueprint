@@ -1,0 +1,28 @@
+name            = "example-api"
+aws_region      = "us-east-1"
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
+container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/example-api@sha256:replace-me"
+
+# Secure default: no internet route from the application subnets.
+# Private AWS API access is provided by VPC endpoints.
+nat_gateway_mode     = "none"
+create_vpc_endpoints = true
+
+allowed_ingress_cidrs = ["0.0.0.0/0"]
+health_check_path     = "/health"
+desired_count         = 2
+max_task_count        = 6
+target_cpu_utilization = 65
+
+# Production defaults are intentionally protective.
+alb_deletion_protection = true
+db_multi_az             = true
+db_deletion_protection  = true
+db_skip_final_snapshot  = false
+
+log_retention_days = 30
+
+tags = {
+  Environment = "production"
+  Owner       = "platform"
+}
